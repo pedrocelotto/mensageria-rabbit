@@ -1,0 +1,38 @@
+version: "3.8"
+services:
+    rabbit:
+        image: rabbitmq:3-management
+        ports: 
+            - 5672:5672
+            - 8080:15672
+    filtro_impar:
+        build: ./filtro_impar
+        volumes:
+            - "./filtro_impar/:/code"
+        restart: on-failure
+        depends_on:
+            - "rabbit"
+        command: sh -c '/bin/wait-for-it.sh rabbit:5672 --timeout=30 -- python -u filtro_impar.py'
+        environment:
+            AMQP_URL: amqp://guest:guest@rabbit:5672
+    producer:
+        build: ./producer
+        volumes:
+            - "./producer/:/code"
+        restart: on-failure
+        depends_on:
+            - "rabbit"
+        command: sh -c '/bin/wait-for-it.sh rabbit:5672 --timeout=30 -- python -u producer.py'
+        environment:
+            AMQP_URL: amqp://guest:guest@rabbit:5672
+    consumer:
+        build: ./consumer
+        volumes:
+            - "./consumer/:/code"
+        restart: on-failure
+        depends_on:
+            - "rabbit"
+        command: sh -c '/bin/wait-for-it.sh rabbit:5672 --timeout=30 -- python -u consumer.py'
+        environment:
+            AMQP_URL: amqp://guest:guest@rabbit:5672
+    
